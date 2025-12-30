@@ -1,0 +1,7 @@
+{
+  "name": "Mafifulus",
+  "description": "An AI-powered financial assistant that converts bank statements into actionable insights, categorizes expenses, and provides audio advice based on life objectives.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
