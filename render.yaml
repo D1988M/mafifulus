@@ -20,14 +20,11 @@ services:
     name: mafifulus-frontend
     env: static
     plan: free
-    region: singapore
+    # region: singapore (Static sites are global CDN, no region needed)
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: mafifulus-backend
-          property: url
+        value: https://mafifulus-backend.onrender.com # Fallback if referencing fails, but let's try 'host'
       - key: VITE_GEMINI_API_KEY
         sync: false
