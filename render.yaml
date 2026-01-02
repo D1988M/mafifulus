@@ -16,9 +16,9 @@ services:
         sync: false
 
   # Frontend Service (Static Site)
-  - type: static
+  - type: web
     name: mafifulus-frontend
-    plan: free
+    env: static
     # region: singapore (Static sites are global CDN, no region needed)
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
