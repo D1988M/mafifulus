@@ -16,10 +16,12 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigate, isLoggedIn, onLogin, onLogout, userName }) => {
     // Login / Auth State
+    const [spotsLeft] = useState(12); // Dynamic urgency
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const [loginStep, setLoginStep] = useState<'DETAILS' | 'SUCCESS'>('DETAILS');
     const [nameInput, setNameInput] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+    const [inviteCode, setInviteCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     // Roadmap Slide State
@@ -36,7 +38,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
             const res = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phoneNumber, name: nameInput }),
+                body: JSON.stringify({ phoneNumber, name: nameInput, inviteCode }),
             });
 
             const data = await res.json();
@@ -92,10 +94,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
         <div className="min-h-screen bg-[#F9FAFB] text-gray-900 font-sans selection:bg-emerald-100 selection:text-emerald-900 flex flex-col relative">
 
             {/* Urgency Bar */}
-            <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold py-1.5 text-center px-4 sticky top-0 z-50 shadow-sm flex justify-center items-center gap-2">
-                <span className="bg-white text-orange-600 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">!</span>
-                <span>JOIN WAITING LIST: We are onboarding ONLY 25 new customers at a time to better serve them.</span>
-                <ArrowRight className="w-3 h-3 ml-1 animate-pulse" />
+            <div className="bg-gradient-to-r from-red-600 to-orange-500 text-white py-3 px-4 text-center sticky top-0 z-50 shadow-sm">
+                <p className="text-lg font-bold">
+                    ⚠️ High Demand: Only {spotsLeft} spots remaining for early access.
+                    <button className="ml-4 underline hover:text-red-100 font-extrabold">Join Waiting List</button>
+                </p>
             </div>
 
             {/* Navigation */}
@@ -271,6 +274,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
                                                 className="w-full mt-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all outline-none font-medium"
                                                 value={phoneNumber}
                                                 onChange={(e) => setPhoneNumber(e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-amber-600 uppercase ml-1">Invite Code (New Users)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. FIFULUS2026"
+                                                className="w-full mt-1 px-4 py-3 bg-amber-50/10 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all outline-none font-medium placeholder:text-gray-300"
+                                                value={inviteCode}
+                                                onChange={(e) => setInviteCode(e.target.value)}
                                             />
                                         </div>
                                         <button

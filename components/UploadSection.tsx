@@ -34,51 +34,72 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onDataLoaded }) =>
   }, [loading]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-    if (file.type !== 'application/pdf') {
-      setError("Please upload a PDF file.");
+    // Filter for PDFs
+    const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf');
+    if (pdfFiles.length === 0) {
+      setError("Please upload PDF files only.");
+      return;
+    }
+
+    if (pdfFiles.length > 5) {
+      setError("Please limit to 5 files for better accuracy.");
       return;
     }
 
     setLoading(true);
     setError(null);
 
+    let allTransactions: Transaction[] = [];
+
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async () => {
-        const base64String = reader.result as string;
-        const base64Content = base64String.split(',')[1];
-        
-        try {
-          const transactions = await parseBankStatement(base64Content);
-          if (transactions.length === 0) {
-             setError("No transactions found or could not parse PDF.");
-          } else {
-             onDataLoaded(transactions);
-          }
-        } catch (err) {
-          setError("Failed to analyze document. Ensure it is a valid bank statement.");
-          console.error(err);
-        } finally {
-          setLoading(false);
+      for (let i = 0; i < pdfFiles.length; i++) {
+        const file = pdfFiles[i];
+        // Custom message for multi-file
+        if (pdfFiles.length > 1) {
+          setLoadingStep(0); // Reset animation cycle? Or maybe just use text
         }
-      };
-      reader.onerror = () => {
-        setError("Error reading file.");
-        setLoading(false);
-      };
+
+        // We can override the text in the UI based on index, 
+        // but for now let's just process sequentially.
+
+        const base64Content = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const res = reader.result as string;
+            resolve(res.split(',')[1]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Parse
+        console.log(`Processing file ${i + 1}/${pdfFiles.length}: ${file.name}`);
+        const newTransactions = await parseBankStatement(base64Content);
+
+        // Merge
+        allTransactions = [...allTransactions, ...newTransactions];
+      }
+
+      if (allTransactions.length === 0) {
+        setError("No transactions found in any of the files.");
+      } else {
+        onDataLoaded(allTransactions);
+      }
+
     } catch (err) {
-      setError("An unexpected error occurred.");
+      console.error(err);
+      setError("Failed to analyze one or more documents. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in-up relative max-w-4xl mx-auto w-full">
-      
+
       {/* Security Modal */}
       {isSecurityOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
@@ -97,14 +118,14 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onDataLoaded }) =>
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-8 overflow-y-auto custom-scrollbar">
               <div className="mb-8 p-6 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
-                 <p className="text-emerald-800 text-sm font-medium leading-relaxed">
-                   Mafifulus uses the same encryption standards as major banks. Your financial data is processed ephemerally and is never sold, shared, or stored on our servers.
-                 </p>
+                <p className="text-emerald-800 text-sm font-medium leading-relaxed">
+                  Mafifulus uses the same encryption standards as major banks. Your financial data is processed ephemerally and is never sold, shared, or stored on our servers.
+                </p>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
                 <div className="flex gap-4 group">
                   <div className="shrink-0 p-3 bg-white border border-gray-100 shadow-sm rounded-xl h-fit group-hover:border-emerald-200 transition-colors">
@@ -155,9 +176,9 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onDataLoaded }) =>
                 </div>
               </div>
             </div>
-            
+
             <div className="p-6 bg-gray-50/80 border-t border-gray-100 flex justify-end">
-              <button 
+              <button
                 onClick={() => setIsSecurityOpen(false)}
                 className="px-8 py-3 bg-gray-900 text-white rounded-xl hover:bg-black font-semibold transition-all shadow-md hover:shadow-lg"
               >
@@ -170,21 +191,21 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onDataLoaded }) =>
 
       {/* Header */}
       <div className="w-full mb-8 flex justify-between items-end">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Upload Statement</h2>
-            <p className="text-gray-500">Supported formats: PDF (up to 10MB)</p>
-          </div>
-          <button 
-            onClick={() => setIsSecurityOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors"
-          >
-            <ShieldCheck className="w-4 h-4" /> Secure
-          </button>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Upload Statement</h2>
+          <p className="text-gray-500">Supported formats: PDF (up to 10MB)</p>
+        </div>
+        <button
+          onClick={() => setIsSecurityOpen(true)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors"
+        >
+          <ShieldCheck className="w-4 h-4" /> Secure
+        </button>
       </div>
 
       {/* Upload Box */}
       <div className="w-full">
-        <label 
+        <label
           className={`
             relative flex flex-col items-center justify-center w-full h-96 border-2 border-dashed rounded-[2rem] cursor-pointer 
             transition-all duration-300 ease-in-out group overflow-hidden bg-white
@@ -195,20 +216,20 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onDataLoaded }) =>
             {loading ? (
               <>
                 <div className="relative mb-8">
-                    <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-20"></div>
-                    <Loader2 className="w-14 h-14 text-emerald-500 animate-spin relative z-10" />
+                  <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-20"></div>
+                  <Loader2 className="w-14 h-14 text-emerald-500 animate-spin relative z-10" />
                 </div>
-                
+
                 <div className="w-24 h-24 mb-6 opacity-40 animate-pulse grayscale">
-                   <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M30 60 C20 50 20 80 30 70" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M70 60 C80 50 80 80 70 70" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
-                      <rect x="35" y="40" width="30" height="40" rx="2" stroke="#334155" strokeWidth="2" fill="white" className="animate-bounce" style={{animationDuration: '2s'}} />
-                      <rect x="40" y="45" width="20" height="2" fill="#cbd5e1" />
-                      <rect x="40" y="50" width="20" height="2" fill="#cbd5e1" />
-                      <rect x="40" y="55" width="15" height="2" fill="#cbd5e1" />
-                      <circle cx="50" cy="30" r="10" stroke="#334155" strokeWidth="2" />
-                   </svg>
+                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M30 60 C20 50 20 80 30 70" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M70 60 C80 50 80 80 70 70" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
+                    <rect x="35" y="40" width="30" height="40" rx="2" stroke="#334155" strokeWidth="2" fill="white" className="animate-bounce" style={{ animationDuration: '2s' }} />
+                    <rect x="40" y="45" width="20" height="2" fill="#cbd5e1" />
+                    <rect x="40" y="50" width="20" height="2" fill="#cbd5e1" />
+                    <rect x="40" y="55" width="15" height="2" fill="#cbd5e1" />
+                    <circle cx="50" cy="30" r="10" stroke="#334155" strokeWidth="2" />
+                  </svg>
                 </div>
 
                 <p key={loadingStep} className="text-lg text-emerald-900 font-bold animate-fade-in">
@@ -221,26 +242,27 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onDataLoaded }) =>
                   <UploadCloud className="w-12 h-12" />
                 </div>
                 <p className="mb-2 text-xl text-gray-900 font-bold group-hover:text-emerald-700 transition-colors">
-                    Click to upload or drag and drop
+                  Click to upload or drag and drop
                 </p>
                 <p className="text-sm text-gray-400 font-medium">
-                    Bank Statements, Credit Card Bills
+                  Bank Statements, Credit Card Bills
                 </p>
                 <div className="mt-8 px-8 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold shadow-md group-hover:bg-emerald-600 transition-all">
-                    Select File
+                  Select File
                 </div>
               </>
             )}
           </div>
-          <input 
-            type="file" 
-            className="hidden" 
-            accept=".pdf" 
-            onChange={handleFileChange} 
+          <input
+            type="file"
+            accept=".pdf"
+            multiple
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            onChange={handleFileChange}
             disabled={loading}
           />
         </label>
-        
+
         {error && (
           <div className="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-700 shadow-sm animate-shake">
             <AlertCircle className="w-5 h-5 shrink-0" />
@@ -249,11 +271,11 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onDataLoaded }) =>
         )}
       </div>
 
-       <div className="mt-12 flex gap-8 text-gray-400 text-sm font-medium">
-           <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Instant Analysis</div>
-           <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Private & Secure</div>
-           <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> 256-bit Encryption</div>
-       </div>
+      <div className="mt-12 flex gap-8 text-gray-400 text-sm font-medium">
+        <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Instant Analysis</div>
+        <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Private & Secure</div>
+        <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> 256-bit Encryption</div>
+      </div>
     </div>
   );
 };

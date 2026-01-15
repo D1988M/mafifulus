@@ -53,6 +53,19 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     let user;
     if (dbAvailable) {
+      // Check if user exists first
+      const existingUser = await prisma.user.findUnique({ where: { phoneNumber } });
+
+      if (!existingUser) {
+        // New User? Check Invite Code
+        const { inviteCode } = req.body;
+        const SERVER_CODE = process.env.INVITE_CODE;
+
+        if (SERVER_CODE && inviteCode !== SERVER_CODE) {
+          return res.status(403).json({ error: 'Invalid Invite Code. Access Denied.' });
+        }
+      }
+
       user = await prisma.user.upsert({
         where: { phoneNumber },
         update: { fullName: name },
