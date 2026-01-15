@@ -187,21 +187,17 @@ app.post('/api/transactions/confirm', async (req, res) => {
 /**
  * UPLOAD: Handle PDF Upload
  */
-app.post('/api/statements/upload', upload.single('file'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
+app.post('/api/statements/upload', upload.array('files', 5), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'No files uploaded' });
   }
 
-  console.log(`[Upload] Received file: ${req.file.originalname} (${req.file.size} bytes)`);
+  console.log(`[Upload] Received ${req.files.length} files.`);
 
-  // In a real app, we would process the PDF here using Gemini API server-side
+  // In a real app, we would process the PDFs here using Gemini API server-side
   // For now, we simulate success as the frontend handles the parsing in this MVP.
 
-  res.json({
-    success: true,
-    message: 'File uploaded successfully',
-    fileId: 'file-' + Date.now(),
-  });
+  res.json({ success: true, count: req.files.length });
 });
 
 app.listen(PORT, () => {
