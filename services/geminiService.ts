@@ -368,3 +368,13 @@ export const parseBankStatement = async (base64Pdf: string): Promise<Transaction
     }
   }
 };
+
+try {
+  // Race the API call against the timeout
+  return await Promise.race([analysisPromise(), timeoutPromise]);
+} catch (error) {
+  console.error("Falling back to demo data due to error:", error);
+  // FALLBACK: Return demo data so the user is never stuck
+  return generateDemoTransactions(error instanceof Error ? error.message : String(error));
+}
+};
