@@ -326,53 +326,52 @@ export const parseBankStatement = async (base64Pdf: string): Promise<Transaction
         Return ONLY a JSON array. No markdown tags.
     `;
 
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: {
-          parts: [
-            { inlineData: { mimeType: "application/pdf", data: base64Pdf } },
-            { text: prompt }
-          ]
-        },
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                date: { type: Type.STRING },
-                description: { type: Type.STRING },
-                amount: { type: Type.NUMBER },
-                currency: { type: Type.STRING },
-                category: { type: Type.STRING },
-              },
-              required: ["date", "description", "amount", "category"]
-            }
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-flash-001",
+      contents: {
+        parts: [
+          { inlineData: { mimeType: "application/pdf", data: base64Pdf } },
+          { text: prompt }
+        ]
+      },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              date: { type: Type.STRING },
+              description: { type: Type.STRING },
+              amount: { type: Type.NUMBER },
+              currency: { type: Type.STRING },
+              category: { type: Type.STRING },
+            },
+            required: ["date", "description", "amount", "category"]
           }
         }
-      });
+      }
+    });
 
-      const jsonText = cleanJson(response.text || "[]");
-      const rawData = JSON.parse(jsonText);
+    const jsonText = cleanJson(response.text || "[]");
+    const rawData = JSON.parse(jsonText);
 
-      return rawData.map((t: any) => ({
-        ...t,
-        id: t.id || (Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15))
-      }));
-    } catch (error) {
-      console.error("Gemini API Error:", error);
-      throw error; // Will be caught by Promise.race
-    }
-  };
-
-  try {
-    // Race the API call against the timeout
-    return await Promise.race([analysisPromise(), timeoutPromise]);
+    return rawData.map((t: any) => ({
+      ...t,
+      id: t.id || (Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15))
+    }));
   } catch (error) {
-    console.error("Falling back to demo data due to error:", error);
-    // FALLBACK: Return demo data so the user is never stuck
-    return generateDemoTransactions(error instanceof Error ? error.message : String(error));
+    console.error("Gemini API Error:", error);
+    throw error; // Will be caught by Promise.race
   }
+};
+
+try {
+  // Race the API call against the timeout
+  return await Promise.race([analysisPromise(), timeoutPromise]);
+} catch (error) {
+  console.error("Falling back to demo data due to error:", error);
+  // FALLBACK: Return demo data so the user is never stuck
+  return generateDemoTransactions(error instanceof Error ? error.message : String(error));
+}
 };
