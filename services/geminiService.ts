@@ -279,7 +279,7 @@ const generateDemoTransactions = (errorMessage?: string): Transaction[] => {
     data.push({
       id: Math.random().toString(36).substring(7),
       date: date.toISOString().split('T')[0],
-      description: desc,
+      description: i === 0 ? `DEMO MODE: ${errorMessage || 'Unknown Cause'}` : desc, // Show error in first item
       amount: parseFloat(amount.toFixed(2)),
       currency: 'AED',
       category: cat,
