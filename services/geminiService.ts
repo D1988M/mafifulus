@@ -302,7 +302,7 @@ function cleanJson(text: string): string {
 export const parseBankStatement = async (base64Pdf: string): Promise<Transaction[]> => {
   // Set a timeout to prevent infinite loading state
   const timeoutPromise = new Promise<Transaction[]>((_, reject) =>
-    setTimeout(() => reject(new Error("Analysis timed out")), 30000)
+    setTimeout(() => reject(new Error("Analysis timed out")), 90000)
   );
 
   const analysisPromise = async (): Promise<Transaction[]> => {
@@ -328,7 +328,7 @@ export const parseBankStatement = async (base64Pdf: string): Promise<Transaction
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         contents: {
           parts: [
             { inlineData: { mimeType: "application/pdf", data: base64Pdf } },
