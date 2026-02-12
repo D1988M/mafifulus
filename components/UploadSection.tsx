@@ -89,9 +89,9 @@ export const UploadSection: React.FC<UploadSectionProps> = ({ onDataLoaded }) =>
         onDataLoaded(allTransactions);
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to analyze one or more documents. Please try again.");
+      setError(err.message || "Failed to analyze one or more documents. Please try again.");
     } finally {
       setLoading(false);
     }
