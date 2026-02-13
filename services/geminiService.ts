@@ -328,7 +328,7 @@ export const parseBankStatement = async (base64Pdf: string): Promise<Transaction
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash-001",
+        model: "gemini-2.0-flash",
         contents: {
           parts: [
             { inlineData: { mimeType: "application/pdf", data: base64Pdf } },
